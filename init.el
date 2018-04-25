@@ -186,3 +186,4 @@
  '(backup-directory-alist '((".*" . "~/.emacs.d/backups/"))))
 ;; create the autosave dir if necessary, since emacs won't.
 (make-directory "~/.emacs.d/autosaves/" t)
+(global-set-key (kbd "M-o") 'ace-window)
