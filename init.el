@@ -166,7 +166,7 @@
 (require 'init-locales)
 
 
-;;----------------------------------------------------------------------------
+;;
 ;; Allow users to provide an optional "init-local" containing personal settings
 ;;----------------------------------------------------------------------------
 (require 'init-local nil t)
@@ -179,11 +179,3 @@
 ;; coding: utf-8
 ;; no-byte-compile: t
 ;; End:
-
-;; Put autosave files (ie #foo#) and backup files (ie foo~) in ~/.emacs.d/.
-(custom-set-variables
- '(auto-save-file-name-transforms '((".*" "~/.emacs.d/autosaves/\\1" t)))
- '(backup-directory-alist '((".*" . "~/.emacs.d/backups/"))))
-;; create the autosave dir if necessary, since emacs won't.
-(make-directory "~/.emacs.d/autosaves/" t)
-(global-set-key (kbd "M-o") 'ace-window)
