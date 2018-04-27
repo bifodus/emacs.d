@@ -104,13 +104,16 @@ typical word processor."
 
 (global-set-key (kbd "C-c c") 'org-capture)
 
-(setq org-capture-templates
-      `(("t" "todo" entry (file "")  ; "" => `org-default-notes-file'
-         "* NEXT %?\n%U\n" :clock-resume t)
-        ("n" "note" entry (file "")
-         "* %? :NOTE:\n%U\n%a\n" :clock-resume t)
-        ))
-
+(setq org-agenda-files '("~/org/gtd/inbox.org"
+                         "~/org/gtd/gtd.org"
+                         "~/org/gtd/tickler.org"))
+(setq org-tag-alist '(("@work" . ?w) ("@home" . ?h)))
+(setq org-capture-templates '(("t" "Todo [inbox]" entry
+                               (file+headline "~/org/gtd/inbox.org" "Tasks")
+                               "* TODO %i%?")
+                              ("T" "Tickler" entry
+                               (file+headline "~/org/gtd/tickler.org" "Tickler")
+                               "* %i%? \n %U")))
 
 
 ;;; Refiling
@@ -156,105 +159,32 @@ typical word processor."
 
 ;;; To-do settings
 
-(setq org-todo-keywords
-      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!/!)")
-              (sequence "PROJECT(p)" "|" "DONE(d!/!)" "CANCELLED(c@/!)")
-              (sequence "WAITING(w@/!)" "DELEGATED(e!)" "HOLD(h)" "|" "CANCELLED(c@/!)")))
-      org-todo-repeat-to-state "NEXT")
+(setq org-todo-keywords '((sequence "TODO(t)" "WAITING(w)" "|" "DONE(d)" "CANCELLED(c)")))
 
-(setq org-todo-keyword-faces
-      (quote (("NEXT" :inherit warning)
-              ("PROJECT" :inherit font-lock-string-face))))
+(setq org-agenda-custom-commands
+      '(("o" "At the office" tags-todo "@office"
+         ((org-agenda-overriding-header "Office")))
+        ("h" "At home" tags-todo "@home"
+         ((org-agenda-overriding-header "Home")))))
 
+(defun my-org-agenda-skip-all-siblings-but-first ()
+  "Skip all but the first non-done entry."
+  (let (should-skip-entry)
+    (unless (org-current-is-todo)
+      (setq should-skip-entry t))
+    (save-excursion
+      (while (and (not should-skip-entry) (org-goto-sibling t))
+        (when (org-current-is-todo)
+          (setq should-skip-entry t))))
+    (when should-skip-entry
+      (or (outline-next-heading)
+          (goto-char (point-max))))))
+
+(defun org-current-is-todo ()
+  "Is todo state."
+  (string= "TODO" (org-get-todo-state)))
 
 
-;;; Agenda views
-
-(setq-default org-agenda-clockreport-parameter-plist '(:link t :maxlevel 3))
-
-
-(let ((active-project-match "-INBOX/PROJECT"))
-
-  (setq org-stuck-projects
-        `(,active-project-match ("NEXT")))
-
-  (setq org-agenda-compact-blocks t
-        org-agenda-sticky t
-        org-agenda-start-on-weekday nil
-        org-agenda-span 'day
-        org-agenda-include-diary nil
-        org-agenda-sorting-strategy
-        '((agenda habit-down time-up user-defined-up effort-up category-keep)
-          (todo category-up effort-up)
-          (tags category-up effort-up)
-          (search category-up))
-        org-agenda-window-setup 'current-window
-        org-agenda-custom-commands
-        `(("N" "Notes" tags "NOTE"
-           ((org-agenda-overriding-header "Notes")
-            (org-tags-match-list-sublevels t)))
-          ("g" "GTD"
-           ((agenda "" nil)
-            (tags "INBOX"
-                  ((org-agenda-overriding-header "Inbox")
-                   (org-tags-match-list-sublevels nil)))
-            (stuck ""
-                   ((org-agenda-overriding-header "Stuck Projects")
-                    (org-agenda-tags-todo-honor-ignore-options t)
-                    (org-tags-match-list-sublevels t)
-                    (org-agenda-todo-ignore-scheduled 'future)))
-            (tags-todo "-INBOX"
-                       ((org-agenda-overriding-header "Next Actions")
-                        (org-agenda-tags-todo-honor-ignore-options t)
-                        (org-agenda-todo-ignore-scheduled 'future)
-                        (org-agenda-skip-function
-                         '(lambda ()
-                            (or (org-agenda-skip-subtree-if 'todo '("HOLD" "WAITING"))
-                                (org-agenda-skip-entry-if 'nottodo '("NEXT")))))
-                        (org-tags-match-list-sublevels t)
-                        (org-agenda-sorting-strategy
-                         '(todo-state-down effort-up category-keep))))
-            (tags-todo ,active-project-match
-                       ((org-agenda-overriding-header "Projects")
-                        (org-tags-match-list-sublevels t)
-                        (org-agenda-sorting-strategy
-                         '(category-keep))))
-            (tags-todo "-INBOX/-NEXT"
-                       ((org-agenda-overriding-header "Orphaned Tasks")
-                        (org-agenda-tags-todo-honor-ignore-options t)
-                        (org-agenda-todo-ignore-scheduled 'future)
-                        (org-agenda-skip-function
-                         '(lambda ()
-                            (or (org-agenda-skip-subtree-if 'todo '("PROJECT" "HOLD" "WAITING" "DELEGATED"))
-                                (org-agenda-skip-subtree-if 'nottododo '("TODO")))))
-                        (org-tags-match-list-sublevels t)
-                        (org-agenda-sorting-strategy
-                         '(category-keep))))
-            (tags-todo "/WAITING"
-                       ((org-agenda-overriding-header "Waiting")
-                        (org-agenda-tags-todo-honor-ignore-options t)
-                        (org-agenda-todo-ignore-scheduled 'future)
-                        (org-agenda-sorting-strategy
-                         '(category-keep))))
-            (tags-todo "/DELEGATED"
-                       ((org-agenda-overriding-header "Delegated")
-                        (org-agenda-tags-todo-honor-ignore-options t)
-                        (org-agenda-todo-ignore-scheduled 'future)
-                        (org-agenda-sorting-strategy
-                         '(category-keep))))
-            (tags-todo "-INBOX"
-                       ((org-agenda-overriding-header "On Hold")
-                        (org-agenda-skip-function
-                         '(lambda ()
-                            (or (org-agenda-skip-subtree-if 'todo '("WAITING"))
-                                (org-agenda-skip-entry-if 'nottodo '("HOLD")))))
-                        (org-tags-match-list-sublevels nil)
-                        (org-agenda-sorting-strategy
-                         '(category-keep))))
-            ;; (tags-todo "-NEXT"
-            ;;            ((org-agenda-overriding-header "All other TODOs")
-            ;;             (org-match-list-sublevels t)))
-            )))))
 
 
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)

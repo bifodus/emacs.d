@@ -29,4 +29,5 @@
 
 (add-hook 'typescript-mode-hook #'setup-tide-mode)
 (setq default-tab-width 2)
+(global-auto-revert-mode 1)
 (provide 'init-local)
